@@ -40,7 +40,7 @@ export function addMogensPhotoStudy(mesh){
 export function addCathedralStudy(mesh){
  const d=at('domkirke'),stone=[.68,.67,.62],light=[.81,.79,.71],shadow=[.27,.31,.34];
  // A single visually coherent west mass connects the nave and the two tower bases.
- mesh.box(d.x,0,d.z-60,39,13,25,stone);
+ mesh.box(d.x,0,d.z-56.5,39,13,32,stone);
  mesh.box(d.x,0,d.z-73.2,10.8,13,.7,stone);
  mesh.box(d.x,0,d.z-73.7,5.2,8,.65,shadow);
  for(const x of [-3.25,3.25])mesh.box(d.x+x,0,d.z-74,1.05,9,.9,light);
