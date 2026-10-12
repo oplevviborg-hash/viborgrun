@@ -102,4 +102,18 @@ export function blocked(pos,data,radius=.65){
  }
  return false;
 }
+export function nearestNamedRoad(roads,pos,maxDistance=42){
+ let best=null,bestDistance=maxDistance;
+ for(const road of roads||[]){
+  if(!road.name||!Array.isArray(road.points))continue;
+  for(let i=1;i<road.points.length;i++){
+   const a=road.points[i-1],b=road.points[i],dx=b.x-a.x,dz=b.z-a.z,den=dx*dx+dz*dz;
+   if(den<.001)continue;
+   const t=Math.max(0,Math.min(1,((pos.x-a.x)*dx+(pos.z-a.z)*dz)/den));
+   const distance=Math.hypot(pos.x-a.x-dx*t,pos.z-a.z-dz*t);
+   if(distance<bestDistance){bestDistance=distance;best={name:road.name,kind:road.kind||'',distance:Math.round(distance)}}
+  }
+ }
+ return best;
+}
 export function snapWalkable(pos,data){if(!blocked(pos,data))return pos;for(let r=5;r<65;r+=5)for(let a=0;a<16;a++){let t=a*Math.PI/8,test={x:pos.x+Math.cos(t)*r,z:pos.z+Math.sin(t)*r};if(!blocked(test,data))return test}return pos}

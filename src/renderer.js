@@ -7,7 +7,7 @@ export class Renderer{
  resize(){let scale=Math.max(1,Math.min(1.85,window.devicePixelRatio||1));const w=window.innerWidth,h=window.innerHeight;this.canvas.width=Math.max(320,Math.floor(w*.72*scale));this.canvas.height=Math.max(220,Math.floor(h*.72*scale));this.gl.viewport(0,0,this.canvas.width,this.canvas.height)}
  upload(vertices,old,usage){let gl=this.gl,m=old||{buffer:gl.createBuffer()};gl.bindBuffer(gl.ARRAY_BUFFER,m.buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),usage);m.count=vertices.length/9;return m}
  setWorld(vertices){this.staticMesh=this.upload(vertices,this.staticMesh,this.gl.STATIC_DRAW)}
- render(verts,player,camera,dt=1/60){const gl=this.gl;gl.clearColor(.63,.77,.83,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(this.program);const aspect=this.canvas.width/this.canvas.height;let eye,at,up;if(camera.top){eye=[player.x,240,player.z+.01];at=[player.x,0,player.z];up=[0,0,-1]}else{const d=31,camYaw=camera.yaw;eye=[player.x+Math.sin(camYaw)*d,24+player.y*.45,player.z+Math.cos(camYaw)*d];at=[player.x,4.2+player.y*.6,player.z];up=[0,1,0]}// Spring-follow camera without judder; snap immediately on view-mode changes.
+ render(verts,player,camera,dt=1/60){const gl=this.gl;gl.clearColor(.63,.77,.83,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(this.program);const aspect=this.canvas.width/this.canvas.height;let eye,at,up;if(camera.top){eye=[player.x,240,player.z+.01];at=[player.x,0,player.z];up=[0,0,-1]}else{const d=clamp(camera.zoom||31,16,65),camYaw=camera.yaw;eye=[player.x+Math.sin(camYaw)*d,24+player.y*.45,player.z+Math.cos(camYaw)*d];at=[player.x,4.2+player.y*.6,player.z];up=[0,1,0]}// Spring-follow camera without judder; snap immediately on view-mode changes.
   if(!this.followEye||this.followTop!==camera.top){
    this.followEye=eye.slice();this.followAt=at.slice();this.followTop=camera.top;
   }else{
@@ -72,7 +72,24 @@ export function triangulate(poly){if(poly.length<3)return [];let a=poly.slice();
 export function palette(id){const colors=[[.74,.6,.5],[.82,.76,.62],[.66,.58,.54],[.7,.68,.58],[.86,.76,.68],[.72,.61,.52]],r=[[.56,.26,.18],[.71,.34,.22],[.43,.36,.38],[.46,.29,.24]];return {walls:colors[hash(id)%colors.length],roof:r[hash(id+17)%r.length]}}
 export function makeCityMesh(data){const m=new Mesh();m.box(0,-2,0,2100,2,2100,[.39,.56,.39],[.51,.65,.47]);const roads=data.roads||[],areas=data.areas||[],buildings=data.buildings||[];
  for(const area of areas){let col=area.type==='water'?[.22,.5,.64]:area.type==='park'?[.3,.59,.34]:area.type==='square'?[.56,.51,.45]:area.type==='green'?[.43,.58,.39]:[.37,.53,.36];m.polygonFlat(area.points,col,area.type==='water'?.1:.07)}
- for(const road of roads){let width=road.width||5;const roadColor=width>=11?[.42,.42,.41]:width>=9?[.46,.45,.43]:[.5,.49,.47];for(let i=1;i<road.points.length;i++)m.line(road.points[i-1].x,road.points[i-1].z,road.points[i].x,road.points[i].z,width,roadColor,.15)}
+ let marks=0;
+ for(const road of roads){
+  const width=road.width||5,walk=['footway','pedestrian','path','steps','cycleway'].includes(road.kind);
+  const paved=['paving_stones','sett','cobblestone','bricks'].includes(road.surface);
+  const roadColor=walk||paved?[.66,.61,.52]:width>=11?[.4,.41,.4]:width>=9?[.45,.45,.43]:[.49,.48,.45];
+  for(let i=1;i<road.points.length;i++){
+   const a=road.points[i-1],b=road.points[i],length=Math.hypot(b.x-a.x,b.z-a.z);
+   if(length<.01)continue;
+   if(!walk&&width>=5)m.line(a.x,a.z,b.x,b.z,width+2.1,[.67,.65,.59],.115);
+   m.line(a.x,a.z,b.x,b.z,width,roadColor,.16);
+   if(!walk&&width>=8&&marks<1400){
+    for(let t=7;t<length-3&&marks<1400;t+=15){
+     const t2=Math.min(length-1,t+3),x1=a.x+(b.x-a.x)*t/length,z1=a.z+(b.z-a.z)*t/length,x2=a.x+(b.x-a.x)*t2/length,z2=a.z+(b.z-a.z)*t2/length;
+     m.line(x1,z1,x2,z2,.22,[.83,.78,.61],.18);marks++;
+    }
+   }
+  }
+ }
  for(const b of buildings){
   const c=palette(b.id),centre=b.cx!==undefined?{x:b.cx,z:b.cz}:{x:b.points.reduce((a,p)=>a+p.x,0)/b.points.length,z:b.points.reduce((a,p)=>a+p.z,0)/b.points.length};
   const detailed=Math.hypot(centre.x,centre.z)<340;

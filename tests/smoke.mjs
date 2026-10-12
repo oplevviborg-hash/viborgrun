@@ -1,6 +1,6 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {fromGeo,toGeo,pointInPoly,lookAt,mul,perspective} from '../src/math.js';
-import {createDemo,PLACES,blocked,at,snapWalkable} from '../src/world.js';
+import {createDemo,PLACES,blocked,at,snapWalkable,nearestNamedRoad} from '../src/world.js';
 import {Game,STORY} from '../src/gameplay.js';
 import {Mesh,triangulate,makeCityMesh} from '../src/renderer.js';
 import fs from 'node:fs';
@@ -43,4 +43,37 @@ test('decorated roof and windows produce finite triangle data',()=>{
  const m=new Mesh();const p=[{x:0,z:0},{x:18,z:0},{x:18,z:12},{x:0,z:12}];
  m.polygonBuilding(p,15,[.8,.7,.6],[.6,.3,.2],{detail:true,roofShape:'gabled',material:'brick'});
  assert.ok(m.v.length>9*36);assert.ok(m.v.every(Number.isFinite));
+});
+
+
+test('side route has three readable clues, a retryable word-order puzzle and persistent speed boots',()=>{
+ const g=new Game(world,{quest:2,collected:['shard1']});
+ const npc=g.entities.find(e=>e.id==='routemaster');
+ g.player={...npc,y:0,vy:0,vx:0,vz:0};g.interact();
+ assert.equal(g.trailStarted,true);g.dialogue=null;
+ for(const e of g.entities.filter(e=>e.kind==='clue')){
+  g.player={...e,y:0,vy:0,vx:0,vz:0};g.interact();
+  assert.ok(g.trailFound.has(e.id),'missing '+e.id);g.dialogue=null;
+ }
+ assert.equal(g.trailFound.size,3);
+ g.player={...npc,y:0,vy:0,vx:0,vz:0};g.interact();
+ assert.equal(g.dialogue.puzzle,'trail');
+ assert.equal(g.answerTrail('vejen-aabner-tid'),false);
+ assert.equal(g.answerTrail('tid-aabner-vejen'),true);
+ assert.equal(g.items.has('vandrestoevler'),true);
+ assert.equal(g.quest,2,'side quest must not overwrite main quest');
+ const restored=new Game(world,{quest:g.quest,collected:[...g.collected],trailStarted:g.trailStarted,trailFound:[...g.trailFound],trailSolved:g.trailSolved,items:[...g.items]});
+ assert.equal(restored.trailSolved,true);
+ assert.equal(restored.trailFound.size,3);
+ assert.equal(restored.items.has('vandrestoevler'),true);
+});
+test('nearest road is chosen by actual segment distance, not arbitrary point',()=>{
+ const roads=[{name:'Langgade',points:[{x:0,z:0},{x:100,z:0}]},{name:'Tværvej',points:[{x:60,z:50},{x:60,z:80}]}];
+ assert.equal(nearestNamedRoad(roads,{x:50,z:4}).name,'Langgade');
+ assert.equal(nearestNamedRoad(roads,{x:50,z:4}).distance,4);
+ assert.equal(nearestNamedRoad(roads,{x:200,z:200}),null);
+});
+test('new map surfaces and walkable roof geometry remain finite',()=>{
+ const map={buildings:[],areas:[{type:'square',points:[{x:0,z:0},{x:12,z:0},{x:12,z:12},{x:0,z:12}]}],roads:[{kind:'pedestrian',surface:'paving_stones',width:7,points:[{x:0,z:0},{x:50,z:0}]},{kind:'primary',width:10,points:[{x:0,z:20},{x:90,z:20}]}]};
+ const verts=makeCityMesh(map);assert.ok(verts.length>300);assert.equal(verts.length%9,0);assert.ok(verts.every(Number.isFinite));
 });

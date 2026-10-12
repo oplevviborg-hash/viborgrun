@@ -16,7 +16,11 @@ QUERY=f'''[out:json][timeout:80];(
  way["highway"]({S},{W},{N},{E});
  way["natural"="water"]({S},{W},{N},{E});
  way["waterway"="riverbank"]({S},{W},{N},{E});
- way["leisure"="park"]({S},{W},{N},{E});
+ way["leisure"~"park|garden"]({S},{W},{N},{E});
+ way["water"]({S},{W},{N},{E});
+ node["historic"]["name"]({S},{W},{N},{E});
+ node["tourism"~"museum|attraction|viewpoint|artwork|information"]["name"]({S},{W},{N},{E});
+ node["amenity"~"library|theatre|townhall"]["name"]({S},{W},{N},{E});
  way["landuse"~"grass|forest|meadow"]({S},{W},{N},{E});
 );out geom;'''
 ENDPOINTS=['https://overpass.kumi.systems/api/interpreter','https://overpass.nchc.org.tw/api/interpreter','https://overpass-api.de/api/interpreter']
@@ -50,8 +54,13 @@ def meters_height(tags,ident):
     except ValueError:pass
     return 7+(ident%14)
 def main():
-    osm=fetch();buildings=[];roads=[];areas=[]
+    osm=fetch();buildings=[];roads=[];areas=[];landmarks=[]
     for e in osm['elements']:
+        if e['type']=='node':
+            tags=e.get('tags',{})
+            if tags.get('name') and 'lat' in e and 'lon' in e:
+                landmarks.append({'id':str(e['id']),'name':tags['name'],'kind':tags.get('historic') or tags.get('tourism') or tags.get('amenity') or 'place','position':xy(e),'source':'osm'})
+            continue
         if e['type']!='way':continue
         tags=e.get('tags',{});pts=points(e)
         if len(pts)<2:continue
@@ -64,17 +73,26 @@ def main():
             'name':tags.get('name',''), 'material':tags.get('building:material','').lower(),
             'roofShape':tags.get('roof:shape','').lower(), 'heightSource':'tagged' if tags.get('height') or tags.get('building:levels') else 'estimated'})
         elif 'highway' in tags:
-            t=tags['highway'];width={'motorway':14,'trunk':12,'primary':11,'secondary':9,'tertiary':8,'residential':6,'unclassified':6,'service':4,'living_street':6,'pedestrian':8,'footway':2.3,'path':2,'cycleway':2,'steps':2.5}.get(t,4)
-            roads.append({'id':str(ident),'width':width,'points':pts,'kind':t,'name':tags.get('name','')})
-        elif len(pts)>=4 and any(k in tags for k in ('natural','leisure','landuse','waterway')):
+            t=tags['highway']
+            if t=='pedestrian' and tags.get('area')=='yes' and len(pts)>=4:
+                if pts[0]==pts[-1]:pts=pts[:-1]
+                areas.append({'id':str(ident),'type':'square','name':tags.get('name',''),'points':pts})
+                continue
+            width={'motorway':14,'trunk':12,'primary':11,'secondary':9,'tertiary':8,'residential':6,'unclassified':6,'service':4,'living_street':6,'pedestrian':8,'footway':2.3,'path':2,'cycleway':2,'steps':2.5}.get(t,4)
+            try:
+                tagged_width=float(tags.get('width','').replace('m','').replace(',','.').strip())
+                if 1.2<=tagged_width<=22:width=tagged_width
+            except ValueError:pass
+            roads.append({'id':str(ident),'width':width,'points':pts,'kind':t,'name':tags.get('name',''),'surface':tags.get('surface',''),'widthSource':'tagged' if 'width' in tags else 'estimated'})
+        elif len(pts)>=4 and any(k in tags for k in ('natural','leisure','landuse','waterway','water')):
             if pts[0]!=pts[-1]:continue
-            pts=pts[:-1];kind='water' if tags.get('natural')=='water' or tags.get('waterway')=='riverbank' else 'park'
+            pts=pts[:-1];kind='water' if tags.get('natural')=='water' or 'water' in tags or tags.get('waterway')=='riverbank' else 'park'
             if len(pts)>250:pts=pts[::max(1,len(pts)//250)]
             areas.append({'id':str(ident),'type':kind,'name':tags.get('name',''),'points':pts})
     result={'source':'osm','label':'OpenStreetMap-geometri, ikke komplet 3D-verificeret',
         'generated':datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d UTC'),
         'bbox':[S,W,N,E], 'attribution':'© OpenStreetMap contributors · ODbL',
-        'buildings':buildings,'roads':roads,'areas':areas}
+        'buildings':buildings,'roads':roads,'areas':areas,'landmarks':landmarks[:120]}
     if not buildings or not roads:raise RuntimeError('No buildings or roads downloaded; keeping demo')
     DEST.parent.mkdir(parents=True,exist_ok=True)
     DEST.write_text(json.dumps(result,ensure_ascii=False,separators=(',',':')),encoding='utf8')
