@@ -1,0 +1,36 @@
+name: Build and publish Viborg 96
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out files
+        uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Get current OSM street and building geometry (fall back safely)
+        run: python scripts/update-map.py || echo 'OpenStreetMap unavailable, publishing included demo map.'
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Publish
+        id: deployment
+        uses: actions/deploy-pages@v4
