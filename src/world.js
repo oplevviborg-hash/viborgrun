@@ -76,5 +76,30 @@ export function createDemo(){
  return {source:'demo',label:'VIBORG-INSPIRERET DEMOKORT (STADIG IKKE GEO-VERIFICERET)',buildings,roads,areas,generated:'2026-10-12'}
 }
 export async function loadWorld(){try{const res=await fetch('./assets/map/city.json',{cache:'no-cache'});if(!res.ok)throw Error('Kortfil mangler');const data=await res.json();if(!['osm','demo'].includes(data.source)||!Array.isArray(data.buildings)||!Array.isArray(data.roads))throw Error('Kortdata ugyldig');return data}catch(e){console.warn('Map fallback:',e);return createDemo()}}
-export function blocked(pos,data){if(Math.abs(pos.x)>740||Math.abs(pos.z)>740)return true;for(const b of data.buildings){if(Math.abs((b.cx??(b.points[0]?.x||0))-pos.x)>140&&b.cx!==undefined)continue;if(pointInPoly(pos,b.points))return true}for(const a of data.areas){if(a.type==='water'&&pointInPoly(pos,a.points))return true}return false}
+function footprintBounds(poly){
+ let minx=Infinity,maxx=-Infinity,minz=Infinity,maxz=-Infinity;
+ for(const p of poly){minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);minz=Math.min(minz,p.z);maxz=Math.max(maxz,p.z)}
+ return {minx,maxx,minz,maxz};
+}
+function hitPolygon(pos,poly,bounds,radius){
+ if(!poly?.length)return false;
+ if(pos.x+radius<bounds.minx||pos.x-radius>bounds.maxx||pos.z+radius<bounds.minz||pos.z-radius>bounds.maxz)return false;
+ const samples=[[0,0],[radius,0],[-radius,0],[0,radius],[0,-radius],
+                [radius*.707,radius*.707],[-radius*.707,radius*.707],[radius*.707,-radius*.707],[-radius*.707,-radius*.707]];
+ for(const [dx,dz] of samples)if(pointInPoly({x:pos.x+dx,z:pos.z+dz},poly))return true;
+ return false;
+}
+export function blocked(pos,data,radius=.65){
+ if(Math.abs(pos.x)>740-radius||Math.abs(pos.z)>740-radius)return true;
+ for(const b of data.buildings){
+  if(!b._bounds)b._bounds=footprintBounds(b.points);
+  if(hitPolygon(pos,b.points,b._bounds,radius))return true;
+ }
+ for(const a of data.areas){
+  if(a.type!=='water')continue;
+  if(!a._bounds)a._bounds=footprintBounds(a.points);
+  if(hitPolygon(pos,a.points,a._bounds,radius))return true;
+ }
+ return false;
+}
 export function snapWalkable(pos,data){if(!blocked(pos,data))return pos;for(let r=5;r<65;r+=5)for(let a=0;a<16;a++){let t=a*Math.PI/8,test={x:pos.x+Math.cos(t)*r,z:pos.z+Math.sin(t)*r};if(!blocked(test,data))return test}return pos}

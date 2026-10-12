@@ -60,7 +60,9 @@ def main():
             if pts[0]==pts[-1]:pts=pts[:-1]
             if len(pts)>90:pts=pts[::max(1,len(pts)//90)]
             buildings.append({'id':str(ident),'height':round(meters_height(tags,ident),1),'points':pts,
-            'cx':round(sum(p['x'] for p in pts)/len(pts),1),'cz':round(sum(p['z'] for p in pts)/len(pts),1)})
+            'cx':round(sum(p['x'] for p in pts)/len(pts),1),'cz':round(sum(p['z'] for p in pts)/len(pts),1),
+            'name':tags.get('name',''), 'material':tags.get('building:material','').lower(),
+            'roofShape':tags.get('roof:shape','').lower(), 'heightSource':'tagged' if tags.get('height') or tags.get('building:levels') else 'estimated'})
         elif 'highway' in tags:
             t=tags['highway'];width={'motorway':14,'trunk':12,'primary':11,'secondary':9,'tertiary':8,'residential':6,'unclassified':6,'service':4,'living_street':6,'pedestrian':8,'footway':2.3,'path':2,'cycleway':2,'steps':2.5}.get(t,4)
             roads.append({'id':str(ident),'width':width,'points':pts,'kind':t,'name':tags.get('name','')})
@@ -68,7 +70,7 @@ def main():
             if pts[0]!=pts[-1]:continue
             pts=pts[:-1];kind='water' if tags.get('natural')=='water' or tags.get('waterway')=='riverbank' else 'park'
             if len(pts)>250:pts=pts[::max(1,len(pts)//250)]
-            areas.append({'id':str(ident),'type':kind,'points':pts})
+            areas.append({'id':str(ident),'type':kind,'name':tags.get('name',''),'points':pts})
     result={'source':'osm','label':'OpenStreetMap-geometri, ikke komplet 3D-verificeret',
         'generated':datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d UTC'),
         'bbox':[S,W,N,E], 'attribution':'© OpenStreetMap contributors · ODbL',

@@ -23,8 +23,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Test gameplay, geometry and repository contracts
+        run: |
+          node --test tests/smoke.mjs
+          python scripts/validate.py
       - name: Get current OSM street and building geometry (fall back safely)
         run: python scripts/update-map.py || echo 'OpenStreetMap unavailable, publishing included demo map.'
+      - name: Validate mapped geometry before deployment
+        run: python scripts/validate.py
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload static website
