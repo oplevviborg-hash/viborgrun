@@ -1,9 +1,9 @@
 import {fromGeo,hash,pointInPoly,dist} from './math.js';
 export const PLACES={
- domkirke:{name:'Viborg Domkirke',lat:56.45051,lon:9.41248,verified:true},
- borgvold:{name:'Borgvold',lat:56.45122,lon:9.41803,verified:true},
+ domkirke:{name:'Viborg Domkirke',lat:56.45051,lon:9.41248,verified:false},
+ borgvold:{name:'Borgvold',lat:56.45122,lon:9.41803,verified:false},
  gammeltorv:{name:'Gammeltorv',lat:56.45051,lon:9.41120,verified:false},
- sctmogens:{name:'Sct. Mogens Gade',lat:56.45126,lon:9.41140,verified:true}
+ sctmogens:{name:'Sct. Mogens Gade',lat:56.45126,lon:9.41140,verified:false}
 };
 export function at(place,dx=0,dz=0){let p=PLACES[place],v=fromGeo(p.lat,p.lon);return {x:v.x+dx,z:v.z+dz}}
 
@@ -76,6 +76,8 @@ export function createDemo(){
  return {source:'demo',label:'VIBORG-INSPIRERET DEMOKORT (STADIG IKKE GEO-VERIFICERET)',buildings,roads,areas,generated:'2026-10-12'}
 }
 export async function loadWorld(){try{const res=await fetch('./assets/map/city.json',{cache:'no-cache'});if(!res.ok)throw Error('Kortfil mangler');const data=await res.json();if(!['osm','demo'].includes(data.source)||!Array.isArray(data.buildings)||!Array.isArray(data.roads))throw Error('Kortdata ugyldig');return data}catch(e){console.warn('Map fallback:',e);return createDemo()}}
+// Photo-inspired, manually placed demo scenery. Not surveyed OSM or elevation data.
+export function demoStoneWall(){const s=at('sctmogens');return {x:s.x+16,z0:s.z+12,z1:s.z+98,width:2.4,source:'photo-inspired-approximation'}}
 function footprintBounds(poly){
  let minx=Infinity,maxx=-Infinity,minz=Infinity,maxz=-Infinity;
  for(const p of poly){minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);minz=Math.min(minz,p.z);maxz=Math.max(maxz,p.z)}
@@ -90,6 +92,10 @@ function hitPolygon(pos,poly,bounds,radius){
  return false;
 }
 export function blocked(pos,data,radius=.65){
+ if(data.source==='demo'){
+  const wall=demoStoneWall();
+  if(Math.abs(pos.x-wall.x)<wall.width/2+radius&&pos.z>wall.z0-radius&&pos.z<wall.z1+radius)return true;
+ }
  if(Math.abs(pos.x)>740-radius||Math.abs(pos.z)>740-radius)return true;
  for(const b of data.buildings){
   if(!b._bounds)b._bounds=footprintBounds(b.points);

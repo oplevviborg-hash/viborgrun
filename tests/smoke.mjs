@@ -89,3 +89,36 @@ test('lygte sidequest rewards persistent equipment and no repeated pickup',()=>{
  const copy=new Game(world,{items:[...g.items],lanternQuest:g.lanternQuest,lanternFound:g.lanternFound,lanternSolved:g.lanternSolved});
  copy.player={...item,y:0,vy:0,vx:0,vz:0};assert.notEqual(copy.near()?.id,'lostlantern');
 });
+
+test('manual map anchors are never labelled as verified OSM geometry',()=>{
+ for(const place of Object.values(PLACES))assert.equal(place.verified,false);
+});
+test('photo-study wall has demo collision without changing OSM navigation',async()=>{
+ const {demoStoneWall}=await import('../src/world.js');
+ const wall=demoStoneWall(),pos={x:wall.x,z:(wall.z0+wall.z1)/2};
+ assert.equal(wall.source,'photo-inspired-approximation');
+ assert.equal(blocked(pos,world),true);
+ assert.equal(blocked(pos,{source:'osm',buildings:[],areas:[],roads:[]}),false);
+});
+test('mason NPC offers a real puzzle with a persistent jump upgrade',()=>{
+ const g=new Game(world,{quest:2,items:['kompas']});
+ const npc=g.entities.find(e=>e.id==='mason');assert.ok(npc);
+ g.player={...npc,y:0,vy:0,vx:0,vz:0};g.interact();
+ assert.equal(g.dialogue.puzzle,'mason');assert.equal(g.dialogue.choices.length,3);
+ assert.equal(g.answerPuzzle('tagrende'),false);assert.equal(g.masonSolved,false);
+ g.interact();assert.equal(g.answerPuzzle('stoettemur'),true);
+ assert.equal(g.items.has('fjederstoevler'),true);assert.equal(g.quest,2);
+ const saved=new Game(world,{quest:g.quest,items:[...g.items],masonSolved:g.masonSolved});
+ assert.equal(saved.masonSolved,true);assert.equal(saved.items.has('kompas'),true);
+ saved.step(.016,{' ':true});assert.ok(saved.player.vy>12);
+});
+test('holding jump does not auto-bunny-hop on landing',()=>{
+ const g=new Game(world,{});for(let i=0;i<160;i++)g.step(.016,{' ':true});
+ assert.equal(g.player.y,0);assert.equal(g.player.vy,0);
+ g.step(.016,{});g.step(.016,{' ':true});assert.ok(g.player.y>0);
+});
+test('retaining wall and trimmed trees add finite retro geometry',async()=>{
+ const {addMogensPhotoStudy}=await import('../src/landmarks.js');
+ const m=new Mesh();addMogensPhotoStudy(m);
+ assert.ok(m.v.length>1000);assert.equal(m.v.length%9,0);assert.ok(m.v.every(Number.isFinite));
+});

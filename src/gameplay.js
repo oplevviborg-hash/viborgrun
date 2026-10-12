@@ -20,6 +20,7 @@ const rawEntities=[
  {id:'clue-dom',name:'Spor ved Domkirken',kind:'clue',place:'domkirke',dx:55,dz:31,word:'TID',color:[.87,.76,.4]},
  {id:'clue-mogens',name:'Spor ved Sct. Mogens Gade',kind:'clue',place:'sctmogens',dx:23,dz:-34,word:'ÅBNER',color:[.87,.76,.4]},
  {id:'clue-borg',name:'Spor ved Borgvold',kind:'clue',place:'borgvold',dx:-44,dz:24,word:'VEJEN',color:[.87,.76,.4]},
+ {id:'mason',name:'Stenmesterens lærling',kind:'npc',place:'sctmogens',dx:24,dz:72,color:[.56,.48,.39],text:['De gamle stenmure holder på mere end jord.']},
  {id:'shard1',name:'Runefragment I',kind:'shard',place:'gammeltorv',dx:18,dz:20,color:[.9,.78,.32],y:1.4},
  {id:'shard2',name:'Runefragment II',kind:'shard',place:'sctmogens',dx:-17,dz:-12,color:[.9,.78,.32],y:1.4},
  {id:'shard3',name:'Runefragment III',kind:'shard',place:'domkirke',dx:44,dz:-25,color:[.9,.78,.32],y:1.4},
@@ -29,13 +30,18 @@ const rawEntities=[
  {id:'chest',name:'Den gamle kiste',kind:'chest',place:'gammeltorv',dx:18,dz:-15,color:[.71,.52,.25]}
 ];
 export class Game{
- constructor(world,save={}){this.world=world;this.quests=STORY;this.quest=clamp(Number(save.quest)||0,0,5);this.collected=new Set(save.collected||[]);this.broken=new Set(save.broken||[]);this.ended=!!save.ended;this.puzzleSolved=!!save.puzzleSolved;this.items=new Set(save.items||[]);this.trailStarted=!!save.trailStarted;this.trailFound=new Set((save.trailFound||[]).filter(id=>['clue-dom','clue-mogens','clue-borg'].includes(id)));this.trailSolved=!!save.trailSolved;this.lanternQuest=!!save.lanternQuest;this.lanternFound=!!save.lanternFound;this.lanternSolved=!!save.lanternSolved;this.lanternUntil=0;this.camera={yaw:0,top:false};this.player={...snapWalkable(save.player||at('gammeltorv',-15,15),world),y:0,vy:0,vx:0,vz:0,heading:0};this.entities=rawEntities.map(e=>{let pt=snapWalkable(at(e.place,e.dx,e.dz),world);return {...e,...pt}});this.dialogue=null;this.onChange=()=>{};this.onWin=()=>{};this.notice='';this.noticeEnd=0;this.time=0;}
+ constructor(world,save={}){this.world=world;this.quests=STORY;this.quest=clamp(Number(save.quest)||0,0,5);this.collected=new Set(save.collected||[]);this.broken=new Set(save.broken||[]);this.ended=!!save.ended;this.puzzleSolved=!!save.puzzleSolved;this.items=new Set(save.items||[]);this.trailStarted=!!save.trailStarted;this.trailFound=new Set((save.trailFound||[]).filter(id=>['clue-dom','clue-mogens','clue-borg'].includes(id)));this.trailSolved=!!save.trailSolved;this.lanternQuest=!!save.lanternQuest;this.lanternFound=!!save.lanternFound;this.lanternSolved=!!save.lanternSolved;this.lanternUntil=0;this.masonSolved=!!save.masonSolved;this.jumpHeld=false;this.camera={yaw:0,top:false};this.player={...snapWalkable(save.player||at('gammeltorv',-15,15),world),y:0,vy:0,vx:0,vz:0,heading:0};this.entities=rawEntities.map(e=>{let pt=snapWalkable(at(e.place,e.dx,e.dz),world);return {...e,...pt}});this.dialogue=null;this.onChange=()=>{};this.onWin=()=>{};this.notice='';this.noticeEnd=0;this.time=0;}
  get goal(){return STORY[this.quest]}
- persist(){try{localStorage.setItem('viborg96-save',JSON.stringify({quest:this.quest,collected:[...this.collected],broken:[...this.broken],ended:this.ended,puzzleSolved:this.puzzleSolved,items:[...this.items],trailStarted:this.trailStarted,trailFound:[...this.trailFound],trailSolved:this.trailSolved,lanternQuest:this.lanternQuest,lanternFound:this.lanternFound,lanternSolved:this.lanternSolved,player:{x:this.player.x,z:this.player.z}}))}catch(e){console.warn('Save unavailable',e)}}
- near(radius=8){let shown=this.entities.filter(e=>!(e.kind==='shard'&&this.collected.has(e.id))&&!(e.kind==='seal'&&this.broken.has(e.id))&&!(e.kind==='clue'&&this.trailFound.has(e.id))&&!(e.kind==='questitem'&&this.lanternFound)&&dist(e,this.player)<radius);shown.sort((a,b)=>dist(a,this.player)-dist(b,this.player));return shown[0]}
+ persist(){try{localStorage.setItem('viborg96-save',JSON.stringify({quest:this.quest,collected:[...this.collected],broken:[...this.broken],ended:this.ended,puzzleSolved:this.puzzleSolved,items:[...this.items],trailStarted:this.trailStarted,trailFound:[...this.trailFound],trailSolved:this.trailSolved,lanternQuest:this.lanternQuest,lanternFound:this.lanternFound,lanternSolved:this.lanternSolved,masonSolved:this.masonSolved,player:{x:this.player.x,z:this.player.z}}))}catch(e){console.warn('Save unavailable',e)}}
+ hidden(e){return e.kind==='shard'&&this.collected.has(e.id)||e.kind==='seal'&&this.broken.has(e.id)||e.kind==='clue'&&this.trailFound.has(e.id)||e.id==='lostlantern'&&this.lanternFound}
+ near(radius=8){let shown=this.entities.filter(e=>!this.hidden(e)&&dist(e,this.player)<radius);shown.sort((a,b)=>dist(a,this.player)-dist(b,this.player));return shown[0]}
  objective(){let remaining=this.entities.filter(e=>{if(this.quest===0)return e.id==='archivist';if(this.quest===1)return e.kind==='shard'&&!this.collected.has(e.id);if(this.quest===2)return e.id==='gardener';if(this.quest===3)return e.kind==='seal'&&!this.broken.has(e.id);if(this.quest===4)return e.id==='chest';return e.kind==='npc'});return remaining.reduce((best,e)=>!best||dist(e,this.player)<dist(best,this.player)?e:best,null)}
  step(dt,keys){
-  this.time+=dt;const p=this.player;let fx=-Math.sin(this.camera.yaw),fz=-Math.cos(this.camera.yaw),sx=Math.cos(this.camera.yaw),sz=-Math.sin(this.camera.yaw);
+  dt=clamp(dt,0,.05);this.time+=dt;const p=this.player;
+  const desired=this.camera.targetYaw??this.camera.yaw;
+  const error=Math.atan2(Math.sin(desired-this.camera.yaw),Math.cos(desired-this.camera.yaw));
+  this.camera.yaw+=error*(1-Math.exp(-Math.max(0,dt)*13));
+  let fx=-Math.sin(this.camera.yaw),fz=-Math.cos(this.camera.yaw),sx=Math.cos(this.camera.yaw),sz=-Math.sin(this.camera.yaw);
   let forward=Number(!!(keys.w||keys.ArrowUp))-Number(!!(keys.s||keys.ArrowDown));
   let strafe=Number(!!(keys.d||keys.ArrowRight))-Number(!!(keys.a||keys.ArrowLeft));
   if(this.camera.top){fx=0;fz=-1;sx=1;sz=0}
@@ -54,7 +60,7 @@ export class Game{
    else{if(!blocked({x:p.x+dx,z:p.z},this.world))p.x+=dx;else p.vx=0;
         if(!blocked({x:p.x,z:p.z+dz},this.world))p.z+=dz;else p.vz=0}
   }
-  if((keys[' ']||keys.space)&&p.y<=.01)p.vy=11.8;
+  const jump=!!(keys[' ']||keys.space);if(jump&&!this.jumpHeld&&p.y<=.01)p.vy=this.items.has('fjederstoevler')?13.6:11.8;this.jumpHeld=jump;
   p.vy-=26*dt;p.y=Math.max(0,p.y+p.vy*dt);if(!p.y)p.vy=0;
  }
  answerTrail(answer){
@@ -65,7 +71,16 @@ export class Game{
   }else this.dialogue={name:'Gadehistorikeren',text:'Ordene er rigtige, men rækkefølgen er forkert. Tænk på ruten: Domkirken, Sct. Mogens Gade, Borgvold.'};
   this.onChange();return this.trailSolved;
  }
+ answerMason(answer){
+  if(this.masonSolved)return false;
+  if(answer==='stoettemur'){
+   this.masonSolved=true;this.items.add('fjederstoevler');this.persist();
+   this.dialogue={name:'Stenmesterens lærling',text:'Korrekt! En støttemur holder jord tilbage ved terrænspring. Du får fjederstøvler, som giver højere hop.'};
+  }else this.dialogue={name:'Stenmesterens lærling',text:'Prøv igen. Hvad holder den højere jord på plads langs vejen?'};
+  this.onChange();return this.masonSolved;
+ }
  answerPuzzle(answer){
+  if(this.dialogue?.puzzle==='mason')return this.answerMason(answer);
   if(this.puzzleSolved)return false;
   if(answer==='borgvold'){
    this.puzzleSolved=true;this.items.add('kompas');this.persist();
@@ -85,6 +100,11 @@ export class Game{
  advance(n){this.quest=Math.max(this.quest,n);this.persist();this.onChange();}
  interact(){let e=this.near();if(!e){this.say('Der er ingen at tale med eller samle op her.');return}
  if(e.kind==='npc'){
+  if(e.id==='mason'){
+   this.dialogue=this.masonSolved?{name:e.name,text:'Støttemuren holder jorden på plads. Dine fjederstøvler giver højere hop.'}:{name:e.name,text:'Langs Sct. Mogens Gade er der gamle stenmure ved terrænspring. Hvad er en støttemurs vigtigste opgave?',choices:[
+    {label:'At holde jord tilbage',value:'stoettemur'},{label:'At lede regn fra taget',value:'tagrende'},{label:'At lave en fontæne',value:'fontaene'}],puzzle:'mason'};
+   this.onChange();return;
+  }
   if(e.id==='lamplighter'){
    if(this.lanternSolved)this.dialogue={name:e.name,text:'Lygten er din. Tryk L for at fremhæve missionernes spor.'};
    else if(this.lanternFound){this.lanternSolved=true;this.items.add('lanterne');this.persist();this.dialogue={name:e.name,text:'Du fandt den! Nu er lygten tændt. Tryk L for at vise missionernes spor i 16 sekunder.'};}

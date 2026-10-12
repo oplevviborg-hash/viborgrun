@@ -71,7 +71,13 @@ def main():
             buildings.append({'id':str(ident),'height':round(meters_height(tags,ident),1),'points':pts,
             'cx':round(sum(p['x'] for p in pts)/len(pts),1),'cz':round(sum(p['z'] for p in pts)/len(pts),1),
             'name':tags.get('name',''), 'material':tags.get('building:material','').lower(),
-            'roofShape':tags.get('roof:shape','').lower(), 'heightSource':'tagged' if tags.get('height') or tags.get('building:levels') else 'estimated'})
+            'roofShape':tags.get('roof:shape','').lower(), 'heightSource':'tagged' if tags.get('height') or tags.get('building:levels') else 'estimated','geometrySource':'osm-way'})
+            if tags.get('name'):
+                landmarks.append({'id':'way/'+str(ident),'name':tags['name'],
+                  'kind':tags.get('building','building'),
+                  'position':{'x':round(sum(p['x'] for p in pts)/len(pts),2),
+                              'z':round(sum(p['z'] for p in pts)/len(pts),2)},
+                  'source':'osm-way-centroid'})
         elif 'highway' in tags:
             t=tags['highway']
             if t=='pedestrian' and tags.get('area')=='yes' and len(pts)>=4:
