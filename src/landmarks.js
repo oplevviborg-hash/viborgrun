@@ -10,6 +10,18 @@ export function addMogensPhotoStudy(mesh){
   mesh.box(w.x-.18-(i%3)*.045,.77+row*.78,z,w.width+.3,.62,2.7,[.62,.59,.51],[.76,.72,.63]);
  }
  mesh.box(w.x,2.8,(w.z0+w.z1)/2,w.width+.8,.35,length,[.7,.67,.6]);
+ // Individually staggered granite faces, restrained colour variation and mortar gaps.
+ // Decorative only: wall position and height remain photo-inspired, not surveyed.
+ const granite=[[.59,.57,.52],[.67,.64,.58],[.53,.53,.49],[.72,.68,.60],[.61,.60,.56]];
+ for(let row=0;row<4;row++){
+  const step=2.05,offset=row%2?step*.48:0;
+  for(let i=0;i<Math.floor(length/step);i++){
+   const z=w.z0+i*step+offset+.9;
+   if(z>w.z1-.9)continue;
+   const h=.54+(i%3)*.09;
+   mesh.box(w.x-w.width/2-.075,.22+row*.62,z,.19,h,1.65,granite[(i*3+row)%granite.length]);
+  }
+ }
  // Raised garden terrace behind the retaining wall, approximated from supplied photos.
  mesh.box(w.x+6,0,(w.z0+w.z1)/2,10,2.7,length,[.39,.49,.31],[.42,.58,.35]);
  for(let i=0;i<5;i++){
