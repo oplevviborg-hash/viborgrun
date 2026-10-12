@@ -30,6 +30,24 @@ export function addCathedralStudy(mesh){
  for(const x of [-3.25,3.25])mesh.box(d.x+x,0,d.z-74,1.05,9,.9,light);
  mesh.box(d.x,8.2,d.z-74,7.7,1.2,.9,light);
  mesh.box(d.x,10.2,d.z-73.95,5.5,.65,.8,[.54,.52,.47]);
+ // Photo-referenced west silhouette: triangular central gable and steep tower pyramids.
+ // Dimensions and placement are artistic demo approximations, NOT surveyed OSM heights.
+ const front=d.z-74.35;
+ mesh.tri([d.x-6.7,13,front],[d.x+6.7,13,front],[d.x,19.8,front],stone);
+ // Recessed rose-window impression, framed in stone (low-poly square approximation).
+ mesh.box(d.x,15.7,front-.12,2.15,2.15,.16,shadow);
+ mesh.box(d.x,15.9,front-.25,1.3,1.3,.12,[.43,.43,.42]);
+ for(const dx of [-13,13]){
+  const x=d.x+dx,z=d.z-60;
+  // Tower caps use four triangular planes instead of a generic gabled roof.
+  const e=6.7,y=34.3,tip=[x,43,z];
+  mesh.tri([x-e,y,z-e],[x+e,y,z-e],tip,[.33,.38,.43]);
+  mesh.tri([x+e,y,z-e],[x+e,y,z+e],tip,[.38,.42,.47]);
+  mesh.tri([x+e,y,z+e],[x-e,y,z+e],tip,[.29,.34,.39]);
+  mesh.tri([x-e,y,z+e],[x-e,y,z-e],tip,[.36,.40,.45]);
+  mesh.box(x,43,z,.18,1.65,.18,[.72,.69,.59]);
+  mesh.box(x,44.05,z,.9,.15,.15,[.72,.69,.59]);
+ }
  for(const dx of [-13,13]){
   mesh.box(d.x+dx,23,d.z-72.6,13.2,1.1,1.2,light);
   for(const offset of [-2.35,2.35]){
