@@ -1,4 +1,4 @@
-import {demoStoneWall} from './world.js';
+import {demoStoneWall,at} from './world.js';
 // Artist's approximation of the stone wall near Sct. Mogens Gade.
 // DEMO ONLY: not an OSM surveyed wall, not measured elevation data.
 export function addMogensPhotoStudy(mesh){
@@ -20,4 +20,28 @@ export function addMogensPhotoStudy(mesh){
  mesh.box(bx,.65,bz,3.6,.36,1.2,[.52,.35,.23]);
  mesh.box(bx,1.03,bz+.48,3.6,1.3,.28,[.54,.36,.24]);
  for(const off of [-1.3,1.3])mesh.box(bx+off,0,bz,.25,.8,.9,[.31,.31,.29]);
+}
+
+// NON-SURVEYED, photo/history-inspired facade; only used in the demo map.
+export function addCathedralStudy(mesh){
+ const d=at('domkirke'),stone=[.68,.67,.62],light=[.81,.79,.71],shadow=[.27,.31,.34];
+ mesh.box(d.x,0,d.z-73.2,10.8,13,.7,stone);
+ mesh.box(d.x,0,d.z-73.7,5.2,8,.65,shadow);
+ for(const x of [-3.25,3.25])mesh.box(d.x+x,0,d.z-74,1.05,9,.9,light);
+ mesh.box(d.x,8.2,d.z-74,7.7,1.2,.9,light);
+ mesh.box(d.x,10.2,d.z-73.95,5.5,.65,.8,[.54,.52,.47]);
+ for(const dx of [-13,13]){
+  mesh.box(d.x+dx,23,d.z-72.6,13.2,1.1,1.2,light);
+  for(const offset of [-2.35,2.35]){
+   mesh.box(d.x+dx+offset,26,d.z-73.1,2.5,5.8,.55,shadow);
+   mesh.box(d.x+dx+offset,31.7,d.z-73.2,3.3,.65,.8,light);
+  }
+  for(const edge of [-6.25,6.25])mesh.box(d.x+dx+edge,0,d.z-72.7,.9,33.6,.9,light);
+ }
+ for(const side of [-1,1])for(let i=0;i<6;i++){
+  const z=d.z-34+i*14,x=d.x+side*18.4;
+  mesh.box(x,12.5,z,.6,5.7,2.3,shadow);
+  mesh.box(x+side*.18,18.4,z,.9,.8,3.2,light);
+  mesh.box(x,0,z+5,.85,13,1.4,stone);
+ }
 }

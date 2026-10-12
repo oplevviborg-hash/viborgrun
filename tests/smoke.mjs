@@ -122,3 +122,31 @@ test('retaining wall and trimmed trees add finite retro geometry',async()=>{
  const m=new Mesh();addMogensPhotoStudy(m);
  assert.ok(m.v.length>1000);assert.equal(m.v.length%9,0);assert.ok(m.v.every(Number.isFinite));
 });
+
+test('Kronikøren: 1876-to-1996 puzzle unlocks persistent usable binoculars',()=>{
+ const g=new Game(world,{quest:3,items:['kompas']}),npc=g.entities.find(e=>e.id==='chronicle');assert.ok(npc);
+ g.player={...npc,y:0,vy:0,vx:0,vz:0};g.interact();assert.equal(g.dialogue.puzzle,'chronicle');
+ assert.equal(g.answerPuzzle('100'),false);g.interact();assert.equal(g.answerPuzzle('120'),true);
+ assert.equal(g.items.has('kikkert'),true);assert.equal(g.quest,3);
+ const copy=new Game(world,{quest:g.quest,chronicleSolved:g.chronicleSolved,items:[...g.items]});
+ assert.equal(copy.chronicleSolved,true);assert.equal(copy.useBinoculars(),true);
+ assert.equal(copy.camera.binoculars,true);assert.equal(copy.useBinoculars(),false);
+});
+test('exact circle-edge collision detects diagonal narrow strips',()=>{
+ const tiny={source:'osm',buildings:[{id:'diag',points:[{x:-5,z:-4.9},{x:5,z:5.1},{x:5.1,z:5},{x:-4.9,z:-5}]}],areas:[],roads:[]};
+ assert.equal(blocked({x:.35,z:-.35},tiny,.65),true);
+ assert.equal(blocked({x:4,z:-4},tiny,.65),false);
+});
+test('cathedral demo facade is finite and does not alter OSM footprints',async()=>{
+ const {addCathedralStudy}=await import('../src/landmarks.js');
+ const m=new Mesh();addCathedralStudy(m);
+ assert.ok(m.v.length>500);assert.equal(m.v.length%9,0);assert.ok(m.v.every(Number.isFinite));
+ const before=JSON.stringify(world.buildings);makeCityMesh(world);assert.equal(JSON.stringify(world.buildings),before);
+});
+test('binocular keyboard and mobile controls, smooth yaw, and existing save keys',()=>{
+ const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),js=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+ assert.match(html,/data-tap="b"/);assert.match(js,/game\.useBinoculars\(\)/);assert.match(js,/camera\.targetYaw=/);
+ const g=new Game(world,{});g.camera.targetYaw=Math.PI;g.step(.016,{});
+ assert.ok(g.camera.yaw>0&&g.camera.yaw<Math.PI);
+});
+

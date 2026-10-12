@@ -21,6 +21,7 @@ const rawEntities=[
  {id:'clue-mogens',name:'Spor ved Sct. Mogens Gade',kind:'clue',place:'sctmogens',dx:23,dz:-34,word:'ÅBNER',color:[.87,.76,.4]},
  {id:'clue-borg',name:'Spor ved Borgvold',kind:'clue',place:'borgvold',dx:-44,dz:24,word:'VEJEN',color:[.87,.76,.4]},
  {id:'mason',name:'Stenmesterens lærling',kind:'npc',place:'sctmogens',dx:24,dz:72,color:[.56,.48,.39],text:['De gamle stenmure holder på mere end jord.']},
+ {id:'chronicle',name:'Kronikøren',kind:'npc',place:'domkirke',dx:62,dz:-24,color:[.39,.48,.66],text:['I arkivet står både datoer og mysterier.']},
  {id:'shard1',name:'Runefragment I',kind:'shard',place:'gammeltorv',dx:18,dz:20,color:[.9,.78,.32],y:1.4},
  {id:'shard2',name:'Runefragment II',kind:'shard',place:'sctmogens',dx:-17,dz:-12,color:[.9,.78,.32],y:1.4},
  {id:'shard3',name:'Runefragment III',kind:'shard',place:'domkirke',dx:44,dz:-25,color:[.9,.78,.32],y:1.4},
@@ -30,9 +31,9 @@ const rawEntities=[
  {id:'chest',name:'Den gamle kiste',kind:'chest',place:'gammeltorv',dx:18,dz:-15,color:[.71,.52,.25]}
 ];
 export class Game{
- constructor(world,save={}){this.world=world;this.quests=STORY;this.quest=clamp(Number(save.quest)||0,0,5);this.collected=new Set(save.collected||[]);this.broken=new Set(save.broken||[]);this.ended=!!save.ended;this.puzzleSolved=!!save.puzzleSolved;this.items=new Set(save.items||[]);this.trailStarted=!!save.trailStarted;this.trailFound=new Set((save.trailFound||[]).filter(id=>['clue-dom','clue-mogens','clue-borg'].includes(id)));this.trailSolved=!!save.trailSolved;this.lanternQuest=!!save.lanternQuest;this.lanternFound=!!save.lanternFound;this.lanternSolved=!!save.lanternSolved;this.lanternUntil=0;this.masonSolved=!!save.masonSolved;this.jumpHeld=false;this.camera={yaw:0,top:false};this.player={...snapWalkable(save.player||at('gammeltorv',-15,15),world),y:0,vy:0,vx:0,vz:0,heading:0};this.entities=rawEntities.map(e=>{let pt=snapWalkable(at(e.place,e.dx,e.dz),world);return {...e,...pt}});this.dialogue=null;this.onChange=()=>{};this.onWin=()=>{};this.notice='';this.noticeEnd=0;this.time=0;}
+ constructor(world,save={}){this.world=world;this.quests=STORY;this.quest=clamp(Number(save.quest)||0,0,5);this.collected=new Set(save.collected||[]);this.broken=new Set(save.broken||[]);this.ended=!!save.ended;this.puzzleSolved=!!save.puzzleSolved;this.items=new Set(save.items||[]);this.trailStarted=!!save.trailStarted;this.trailFound=new Set((save.trailFound||[]).filter(id=>['clue-dom','clue-mogens','clue-borg'].includes(id)));this.trailSolved=!!save.trailSolved;this.lanternQuest=!!save.lanternQuest;this.lanternFound=!!save.lanternFound;this.lanternSolved=!!save.lanternSolved;this.lanternUntil=0;this.masonSolved=!!save.masonSolved;this.chronicleSolved=!!save.chronicleSolved;this.jumpHeld=false;this.camera={yaw:0,top:false,binoculars:false};this.player={...snapWalkable(save.player||at('gammeltorv',-15,15),world),y:0,vy:0,vx:0,vz:0,heading:0};this.entities=rawEntities.map(e=>{let pt=snapWalkable(at(e.place,e.dx,e.dz),world);return {...e,...pt}});this.dialogue=null;this.onChange=()=>{};this.onWin=()=>{};this.notice='';this.noticeEnd=0;this.time=0;}
  get goal(){return STORY[this.quest]}
- persist(){try{localStorage.setItem('viborg96-save',JSON.stringify({quest:this.quest,collected:[...this.collected],broken:[...this.broken],ended:this.ended,puzzleSolved:this.puzzleSolved,items:[...this.items],trailStarted:this.trailStarted,trailFound:[...this.trailFound],trailSolved:this.trailSolved,lanternQuest:this.lanternQuest,lanternFound:this.lanternFound,lanternSolved:this.lanternSolved,masonSolved:this.masonSolved,player:{x:this.player.x,z:this.player.z}}))}catch(e){console.warn('Save unavailable',e)}}
+ persist(){try{localStorage.setItem('viborg96-save',JSON.stringify({quest:this.quest,collected:[...this.collected],broken:[...this.broken],ended:this.ended,puzzleSolved:this.puzzleSolved,items:[...this.items],trailStarted:this.trailStarted,trailFound:[...this.trailFound],trailSolved:this.trailSolved,lanternQuest:this.lanternQuest,lanternFound:this.lanternFound,lanternSolved:this.lanternSolved,masonSolved:this.masonSolved,chronicleSolved:this.chronicleSolved,player:{x:this.player.x,z:this.player.z}}))}catch(e){console.warn('Save unavailable',e)}}
  hidden(e){return e.kind==='shard'&&this.collected.has(e.id)||e.kind==='seal'&&this.broken.has(e.id)||e.kind==='clue'&&this.trailFound.has(e.id)||e.id==='lostlantern'&&this.lanternFound}
  near(radius=8){let shown=this.entities.filter(e=>!this.hidden(e)&&dist(e,this.player)<radius);shown.sort((a,b)=>dist(a,this.player)-dist(b,this.player));return shown[0]}
  objective(){let remaining=this.entities.filter(e=>{if(this.quest===0)return e.id==='archivist';if(this.quest===1)return e.kind==='shard'&&!this.collected.has(e.id);if(this.quest===2)return e.id==='gardener';if(this.quest===3)return e.kind==='seal'&&!this.broken.has(e.id);if(this.quest===4)return e.id==='chest';return e.kind==='npc'});return remaining.reduce((best,e)=>!best||dist(e,this.player)<dist(best,this.player)?e:best,null)}
@@ -79,8 +80,17 @@ export class Game{
   }else this.dialogue={name:'Stenmesterens lærling',text:'Prøv igen. Hvad holder den højere jord på plads langs vejen?'};
   this.onChange();return this.masonSolved;
  }
+ answerChronicle(answer){
+  if(this.chronicleSolved)return false;
+  if(answer==='120'){
+   this.chronicleSolved=true;this.items.add('kikkert');this.persist();
+   this.dialogue={name:'Kronikøren',text:'1876 til 1996 er 120 år. Du får en kikkert! Tryk B for at zoome tæt på og B igen for at vende tilbage.'};
+  }else this.dialogue={name:'Kronikøren',text:'Regn efter: 1996 minus 1876. Du kan prøve igen.'};
+  this.onChange();return this.chronicleSolved;
+ }
  answerPuzzle(answer){
   if(this.dialogue?.puzzle==='mason')return this.answerMason(answer);
+  if(this.dialogue?.puzzle==='chronicle')return this.answerChronicle(answer);
   if(this.puzzleSolved)return false;
   if(answer==='borgvold'){
    this.puzzleSolved=true;this.items.add('kompas');this.persist();
@@ -89,6 +99,13 @@ export class Game{
   this.onChange();return this.puzzleSolved;
  }
  useLantern(){if(!this.items.has('lanterne')){this.say('Spørg lygtemageren på Sct. Mogens Gade.');return false}this.lanternUntil=this.time+16;this.say('LYGTE TÆNDT · Missionsspor lyser i 16 sekunder.');return true}
+ useBinoculars(){
+  if(!this.items.has('kikkert')){this.say('Kronikøren ved Domkirken har en gåde og en kikkert.');return false}
+  if(this.camera.top)this.camera.top=false;
+  this.camera.binoculars=!this.camera.binoculars;
+  this.say(this.camera.binoculars?'KIKKERT AKTIV · B: normal visning':'KIKKERT LUKKET');
+  return this.camera.binoculars;
+ }
  useCompass(){
   if(!this.items.has('kompas')){this.say('Find kortlæseren ved Domkirken for at låse kortkompasset op.');return}
   const e=this.objective();if(!e){this.say('Alle hovedmissioner er løst. Brug kortet til at udforske frit.');return}
@@ -100,6 +117,11 @@ export class Game{
  advance(n){this.quest=Math.max(this.quest,n);this.persist();this.onChange();}
  interact(){let e=this.near();if(!e){this.say('Der er ingen at tale med eller samle op her.');return}
  if(e.kind==='npc'){
+  if(e.id==='chronicle'){
+   this.dialogue=this.chronicleSolved?{name:e.name,text:'Kikkerten er din. Tryk B for at undersøge byen tættere på.'}:{name:e.name,text:'Viborg Domkirke blev genindviet i 1876. I vores eventyr er året 1996. Hvor mange år er der gået? (Historisk årstal: Viborg Museum.)',choices:[
+    {label:'100 år',value:'100'},{label:'120 år',value:'120'},{label:'140 år',value:'140'}],puzzle:'chronicle'};
+   this.onChange();return;
+  }
   if(e.id==='mason'){
    this.dialogue=this.masonSolved?{name:e.name,text:'Støttemuren holder jorden på plads. Dine fjederstøvler giver højere hop.'}:{name:e.name,text:'Langs Sct. Mogens Gade er der gamle stenmure ved terrænspring. Hvad er en støttemurs vigtigste opgave?',choices:[
     {label:'At holde jord tilbage',value:'stoettemur'},{label:'At lede regn fra taget',value:'tagrende'},{label:'At lave en fontæne',value:'fontaene'}],puzzle:'mason'};

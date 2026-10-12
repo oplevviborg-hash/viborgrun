@@ -1,5 +1,5 @@
 import {perspective,lookAt,mul,clamp,hash} from './math.js';
-import {addMogensPhotoStudy} from './landmarks.js';
+import {addMogensPhotoStudy,addCathedralStudy} from './landmarks.js';
 const vs=`attribute vec3 aPos;attribute vec3 aCol;attribute vec3 aNorm;uniform mat4 uVP;varying vec3 vCol;varying vec3 vNorm;varying float vDepth;varying float vHeight;void main(){vec4 q=uVP*vec4(aPos,1.);gl_Position=q;vCol=aCol;vNorm=aNorm;vDepth=q.w;vHeight=aPos.y;}`;
 const fs=`precision mediump float;varying vec3 vCol;varying vec3 vNorm;varying float vDepth;varying float vHeight;void main(){vec3 n=normalize(vNorm);vec3 sun=normalize(vec3(-.55,1.15,.25));vec3 sky=normalize(vec3(.2,1.,-.4));float sunShade=max(dot(n,sun),0.0);float skyShade=max(dot(n,sky),0.0);float bounce=max(dot(n,normalize(vec3(.0,-1.,.0))),0.0);float shade=.36+sunShade*.52+skyShade*.14+bounce*.06;shade=floor(shade*5.)/5.;vec3 lit=vCol*shade;float h=clamp(vHeight/42.,0.,1.);lit=mix(lit,lit+vec3(.035,.02,.0),h*.18);vec3 fog=vec3(.66,.78,.82);float f=clamp((vDepth-175.)/700.,0.,.78);gl_FragColor=vec4(mix(lit,fog,f),1.);}`;
 function shader(gl,type,source){const sh=gl.createShader(type);gl.shaderSource(sh,source);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(sh));return sh}
@@ -8,7 +8,7 @@ export class Renderer{
  resize(){let scale=Math.max(1,Math.min(1.85,window.devicePixelRatio||1));const w=window.innerWidth,h=window.innerHeight;this.canvas.width=Math.max(320,Math.floor(w*.72*scale));this.canvas.height=Math.max(220,Math.floor(h*.72*scale));this.gl.viewport(0,0,this.canvas.width,this.canvas.height)}
  upload(vertices,old,usage){let gl=this.gl,m=old||{buffer:gl.createBuffer()};gl.bindBuffer(gl.ARRAY_BUFFER,m.buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),usage);m.count=vertices.length/9;return m}
  setWorld(vertices){this.staticMesh=this.upload(vertices,this.staticMesh,this.gl.STATIC_DRAW)}
- render(verts,player,camera,dt=1/60){const gl=this.gl;gl.clearColor(.63,.77,.83,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(this.program);const aspect=this.canvas.width/this.canvas.height;let eye,at,up;if(camera.top){eye=[player.x,240,player.z+.01];at=[player.x,0,player.z];up=[0,0,-1]}else{const d=clamp(camera.zoom||31,16,65),camYaw=camera.yaw;eye=[player.x+Math.sin(camYaw)*d,24+player.y*.45,player.z+Math.cos(camYaw)*d];at=[player.x,4.2+player.y*.6,player.z];up=[0,1,0]}// Spring-follow camera without judder; snap immediately on view-mode changes.
+ render(verts,player,camera,dt=1/60){const gl=this.gl;gl.clearColor(.63,.77,.83,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(this.program);const aspect=this.canvas.width/this.canvas.height;let eye,at,up;if(camera.top){eye=[player.x,240,player.z+.01];at=[player.x,0,player.z];up=[0,0,-1]}else{const d=camera.binoculars?12:clamp(camera.zoom||31,16,65),camYaw=camera.yaw;eye=[player.x+Math.sin(camYaw)*d,24+player.y*.45,player.z+Math.cos(camYaw)*d];at=[player.x,4.2+player.y*.6,player.z];up=[0,1,0]}// Spring-follow camera without judder; snap immediately on view-mode changes.
   if(!this.followEye||this.followTop!==camera.top){
    this.followEye=eye.slice();this.followAt=at.slice();this.followTop=camera.top;
   }else{
@@ -99,5 +99,5 @@ export function makeCityMesh(data){const m=new Mesh();m.box(0,-2,0,2100,2,2100,[
   const walls=b.material==='brick'?[.61,.35,.29]:b.material==='stone'?[.67,.66,.61]:b.material==='wood'?[.69,.49,.34]:c.walls;
   m.polygonBuilding(b.points,b.height,walls,c.roof,{detail:detailed,material:b.material,roofShape:b.roofShape});
  }
- if(data.source==='demo')addMogensPhotoStudy(m);
+ if(data.source==='demo'){addMogensPhotoStudy(m);addCathedralStudy(m);}
  return m.v}

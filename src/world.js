@@ -83,12 +83,18 @@ function footprintBounds(poly){
  for(const p of poly){minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);minz=Math.min(minz,p.z);maxz=Math.max(maxz,p.z)}
  return {minx,maxx,minz,maxz};
 }
+function segmentDistanceSquared(p,a,b){
+ const dx=b.x-a.x,dz=b.z-a.z,den=dx*dx+dz*dz;
+ const t=den>0?Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.z-a.z)*dz)/den)):0;
+ const ex=p.x-a.x-t*dx,ez=p.z-a.z-t*dz;
+ return ex*ex+ez*ez;
+}
 function hitPolygon(pos,poly,bounds,radius){
  if(!poly?.length)return false;
  if(pos.x+radius<bounds.minx||pos.x-radius>bounds.maxx||pos.z+radius<bounds.minz||pos.z-radius>bounds.maxz)return false;
- const samples=[[0,0],[radius,0],[-radius,0],[0,radius],[0,-radius],
-                [radius*.707,radius*.707],[-radius*.707,radius*.707],[radius*.707,-radius*.707],[-radius*.707,-radius*.707]];
- for(const [dx,dz] of samples)if(pointInPoly({x:pos.x+dx,z:pos.z+dz},poly))return true;
+ if(pointInPoly(pos,poly))return true;
+ // Exact circle-to-edge test catches diagonal strips missed by discrete samples.
+ for(let i=0;i<poly.length;i++)if(segmentDistanceSquared(pos,poly[i],poly[(i+1)%poly.length])<=radius*radius)return true;
  return false;
 }
 export function blocked(pos,data,radius=.65){

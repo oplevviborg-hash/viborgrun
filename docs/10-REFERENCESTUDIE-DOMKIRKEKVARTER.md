@@ -23,3 +23,12 @@ Der er endnu **ikke** etableret en verificeret digital terrænmodel eller faktis
 ## Næste validering
 
 Kontrollér domkirkens faktiske bygningsomrids, tårnenes retning, stenmurens placering og højdekoter mod særskilte, lovligt anvendelige datakilder. Uden sådanne data er dekorative placeringer altid mærket som approximationer.
+
+## Runde 12. oktober: kildebaseret gåde, bydetaljer og styring
+
+- **Historisk kilde:** Viborg Domkirke blev genindviet den 10. september 1876 (Viborg Museum: https://viborgmuseum.dk/leksikon/v/viborg-domkirke). Den fiktive kronikør spørger om antal år frem til spilåret 1996 (120 år).
+- **OSM-proveniens:** OSM-way-geometri bevares for veje, arealer og bygninger. Et højde-tag mærkes `osm-height-tag`, etagebaseret højde er `levels-estimate`, og fallback er `artistic-estimate`. Vejbredde mærkes som OSM-tag eller skøn. Navngivne områders midtpunkter er afledte OSM-way-centroider, **ikke** opmålte punkter.
+- **Facade:** Vestportal, tårnvinduer, pilastre og skibsvinduer vises kun i demokortet. Placering, højde og terræn er fortsat kunstneriske approximationer.
+- **Styring:** Kollision bruger eksakt cirkel-mod-kant afstand. Musebevægelse sætter mål-yaw, som spillet interpolerer. Kikkerten er et redskab (B), ikke en ændring af verdensgeometrien.
+- **Gemte spil:** Eksisterende save-felter bevares; `chronicleSolved` er nyt og valgfrit, og `kikkert` ligger i det eksisterende inventar.
+

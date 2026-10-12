@@ -43,23 +43,23 @@ def points(elem):
     arr=[xy(p) for p in elem.get('geometry',[])]
     return [p for i,p in enumerate(arr) if not i or p!=arr[i-1]]
 def meters_height(tags,ident):
+    # A mapped height tag is not an independent survey.
     try:
-        v=tags.get('height','').split(' ')[0].replace('m','').replace(',','.')
-        n=float(v)
-        if 2<n<90:return n
-    except ValueError:pass
+        n=float(tags.get('height','').split(' ')[0].replace('m','').replace(',','.'))
+        if 2<n<90:return n,'osm-height-tag'
+    except (ValueError,TypeError):pass
     try:
         n=float(tags.get('building:levels',''))*3.15+1.1
-        if 2<n<90:return n
-    except ValueError:pass
-    return 7+(ident%14)
+        if 2<n<90:return n,'levels-estimate'
+    except (ValueError,TypeError):pass
+    return 7+(ident%14),'artistic-estimate'
 def main():
     osm=fetch();buildings=[];roads=[];areas=[];landmarks=[]
     for e in osm['elements']:
         if e['type']=='node':
             tags=e.get('tags',{})
             if tags.get('name') and 'lat' in e and 'lon' in e:
-                landmarks.append({'id':str(e['id']),'name':tags['name'],'kind':tags.get('historic') or tags.get('tourism') or tags.get('amenity') or 'place','position':xy(e),'source':'osm'})
+                landmarks.append({'id':str(e['id']),'name':tags['name'],'kind':tags.get('historic') or tags.get('tourism') or tags.get('amenity') or 'place','position':xy(e),'source':'osm-node'})
             continue
         if e['type']!='way':continue
         tags=e.get('tags',{});pts=points(e)
@@ -68,10 +68,11 @@ def main():
         if 'building' in tags and len(pts)>=4:
             if pts[0]==pts[-1]:pts=pts[:-1]
             if len(pts)>90:pts=pts[::max(1,len(pts)//90)]
-            buildings.append({'id':str(ident),'height':round(meters_height(tags,ident),1),'points':pts,
+            height,height_source=meters_height(tags,ident)
+            buildings.append({'id':str(ident),'height':round(height,1),'points':pts,
             'cx':round(sum(p['x'] for p in pts)/len(pts),1),'cz':round(sum(p['z'] for p in pts)/len(pts),1),
             'name':tags.get('name',''), 'material':tags.get('building:material','').lower(),
-            'roofShape':tags.get('roof:shape','').lower(), 'heightSource':'tagged' if tags.get('height') or tags.get('building:levels') else 'estimated','geometrySource':'osm-way'})
+            'roofShape':tags.get('roof:shape','').lower(), 'heightSource':height_source,'geometrySource':'osm-way'})
             if tags.get('name'):
                 landmarks.append({'id':'way/'+str(ident),'name':tags['name'],
                   'kind':tags.get('building','building'),
@@ -82,19 +83,26 @@ def main():
             t=tags['highway']
             if t=='pedestrian' and tags.get('area')=='yes' and len(pts)>=4:
                 if pts[0]==pts[-1]:pts=pts[:-1]
-                areas.append({'id':str(ident),'type':'square','name':tags.get('name',''),'points':pts})
+                areas.append({'id':str(ident),'type':'square','name':tags.get('name',''),'points':pts,'geometrySource':'osm-way'})
                 continue
             width={'motorway':14,'trunk':12,'primary':11,'secondary':9,'tertiary':8,'residential':6,'unclassified':6,'service':4,'living_street':6,'pedestrian':8,'footway':2.3,'path':2,'cycleway':2,'steps':2.5}.get(t,4)
+            width_source='artistic-estimate'
             try:
                 tagged_width=float(tags.get('width','').replace('m','').replace(',','.').strip())
-                if 1.2<=tagged_width<=22:width=tagged_width
+                if 1.2<=tagged_width<=22:width=tagged_width;width_source='osm-width-tag'
             except ValueError:pass
-            roads.append({'id':str(ident),'width':width,'points':pts,'kind':t,'name':tags.get('name',''),'surface':tags.get('surface',''),'widthSource':'tagged' if 'width' in tags else 'estimated'})
+            roads.append({'id':str(ident),'width':width,'points':pts,'kind':t,'name':tags.get('name',''),'surface':tags.get('surface',''),'widthSource':width_source,'geometrySource':'osm-way'})
         elif len(pts)>=4 and any(k in tags for k in ('natural','leisure','landuse','waterway','water')):
             if pts[0]!=pts[-1]:continue
             pts=pts[:-1];kind='water' if tags.get('natural')=='water' or 'water' in tags or tags.get('waterway')=='riverbank' else 'park'
             if len(pts)>250:pts=pts[::max(1,len(pts)//250)]
-            areas.append({'id':str(ident),'type':kind,'name':tags.get('name',''),'points':pts})
+            areas.append({'id':str(ident),'type':kind,'name':tags.get('name',''),'points':pts,'geometrySource':'osm-way'})
+            if tags.get('name'):
+                landmarks.append({'id':'way/'+str(ident),'name':tags['name'],'kind':kind,
+                  'position':{'x':round(sum(p['x'] for p in pts)/len(pts),2),
+                              'z':round(sum(p['z'] for p in pts)/len(pts),2)},
+                  'source':'osm-way-centroid'})
+    landmarks.sort(key=lambda p:p['position']['x']**2+p['position']['z']**2)
     result={'source':'osm','label':'OpenStreetMap-geometri, ikke komplet 3D-verificeret',
         'generated':datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d UTC'),
         'bbox':[S,W,N,E], 'attribution':'© OpenStreetMap contributors · ODbL',
