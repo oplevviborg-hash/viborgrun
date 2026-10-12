@@ -10,6 +10,8 @@ export function addMogensPhotoStudy(mesh){
   mesh.box(w.x-.18-(i%3)*.045,.77+row*.78,z,w.width+.3,.62,2.7,[.62,.59,.51],[.76,.72,.63]);
  }
  mesh.box(w.x,2.8,(w.z0+w.z1)/2,w.width+.8,.35,length,[.7,.67,.6]);
+ // Raised garden terrace behind the retaining wall, approximated from supplied photos.
+ mesh.box(w.x+6,0,(w.z0+w.z1)/2,10,2.7,length,[.39,.49,.31],[.42,.58,.35]);
  for(let i=0;i<5;i++){
   const z=w.z0+10+i*16,x=w.x+8;
   mesh.box(x,0,z,1.05,5.5,1.05,[.38,.28,.19]);
@@ -25,6 +27,8 @@ export function addMogensPhotoStudy(mesh){
 // NON-SURVEYED, photo/history-inspired facade; only used in the demo map.
 export function addCathedralStudy(mesh){
  const d=at('domkirke'),stone=[.68,.67,.62],light=[.81,.79,.71],shadow=[.27,.31,.34];
+ // A single visually coherent west mass connects the nave and the two tower bases.
+ mesh.box(d.x,0,d.z-60,39,13,25,stone);
  mesh.box(d.x,0,d.z-73.2,10.8,13,.7,stone);
  mesh.box(d.x,0,d.z-73.7,5.2,8,.65,shadow);
  for(const x of [-3.25,3.25])mesh.box(d.x+x,0,d.z-74,1.05,9,.9,light);
@@ -39,6 +43,7 @@ export function addCathedralStudy(mesh){
  mesh.box(d.x,15.9,front-.25,1.3,1.3,.12,[.43,.43,.42]);
  for(const dx of [-13,13]){
   const x=d.x+dx,z=d.z-60;
+  mesh.box(x,0,z,13.4,34.3,24,stone);
   // Tower caps use four triangular planes instead of a generic gabled roof.
   const e=6.7,y=34.3,tip=[x,43,z];
   mesh.tri([x-e,y,z-e],[x+e,y,z-e],tip,[.33,.38,.43]);
