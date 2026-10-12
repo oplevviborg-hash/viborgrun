@@ -75,13 +75,14 @@ export function makeCityMesh(data){const m=new Mesh();m.box(0,-2,0,2100,2,2100,[
  let marks=0;
  for(const road of roads){
   const width=road.width||5,walk=['footway','pedestrian','path','steps','cycleway'].includes(road.kind);
-  const paved=['paving_stones','sett','cobblestone','bricks'].includes(road.surface);
+  const paved=/paving_stones|sett|cobblestone|unhewn_cobblestone|bricks/i.test(road.surface||'');
   const roadColor=walk||paved?[.66,.61,.52]:width>=11?[.4,.41,.4]:width>=9?[.45,.45,.43]:[.49,.48,.45];
   for(let i=1;i<road.points.length;i++){
    const a=road.points[i-1],b=road.points[i],length=Math.hypot(b.x-a.x,b.z-a.z);
    if(length<.01)continue;
    if(!walk&&width>=5)m.line(a.x,a.z,b.x,b.z,width+2.1,[.67,.65,.59],.115);
    m.line(a.x,a.z,b.x,b.z,width,roadColor,.16);
+   if((paved||road.kind==='pedestrian')&&Math.hypot(a.x,a.z)<350&&Math.hypot(b.x,b.z)<350){const dx=b.x-a.x,dz=b.z-a.z,nx=-dz/length,nz=dx/length;for(const side of [-1,1])m.line(a.x+nx*width*.47*side,a.z+nz*width*.47*side,b.x+nx*width*.47*side,b.z+nz*width*.47*side,.18,[.81,.75,.63],.19)}
    if(!walk&&width>=8&&marks<1400){
     for(let t=7;t<length-3&&marks<1400;t+=15){
      const t2=Math.min(length-1,t+3),x1=a.x+(b.x-a.x)*t/length,z1=a.z+(b.z-a.z)*t/length,x2=a.x+(b.x-a.x)*t2/length,z2=a.z+(b.z-a.z)*t2/length;

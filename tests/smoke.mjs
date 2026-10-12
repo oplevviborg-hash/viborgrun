@@ -77,3 +77,15 @@ test('new map surfaces and walkable roof geometry remain finite',()=>{
  const map={buildings:[],areas:[{type:'square',points:[{x:0,z:0},{x:12,z:0},{x:12,z:12},{x:0,z:12}]}],roads:[{kind:'pedestrian',surface:'paving_stones',width:7,points:[{x:0,z:0},{x:50,z:0}]},{kind:'primary',width:10,points:[{x:0,z:20},{x:90,z:20}]}]};
  const verts=makeCityMesh(map);assert.ok(verts.length>300);assert.equal(verts.length%9,0);assert.ok(verts.every(Number.isFinite));
 });
+
+test('lygte sidequest rewards persistent equipment and no repeated pickup',()=>{
+ const g=new Game(world,{}),npc=g.entities.find(e=>e.id==='lamplighter'),item=g.entities.find(e=>e.id==='lostlantern');
+ assert.ok(npc&&item);
+ g.player={...npc,y:0,vy:0,vx:0,vz:0};g.interact();assert.equal(g.lanternQuest,true);
+ g.dialogue=null;g.player={...item,y:0,vy:0,vx:0,vz:0};g.interact();assert.equal(g.lanternFound,true);
+ g.dialogue=null;g.player={...npc,y:0,vy:0,vx:0,vz:0};g.interact();
+ assert.equal(g.lanternSolved,true);assert.equal(g.items.has('lanterne'),true);
+ assert.equal(g.useLantern(),true);assert.ok(g.lanternUntil>g.time);
+ const copy=new Game(world,{items:[...g.items],lanternQuest:g.lanternQuest,lanternFound:g.lanternFound,lanternSolved:g.lanternSolved});
+ copy.player={...item,y:0,vy:0,vx:0,vz:0};assert.notEqual(copy.near()?.id,'lostlantern');
+});

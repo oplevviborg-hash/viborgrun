@@ -10,6 +10,8 @@ export const STORY=[
 const rawEntities=[
  {id:'archivist',name:'Arkivaren',kind:'npc',place:'gammeltorv',dx:0,dz:2,color:[.25,.49,.66],text:['Du er ikke herfra, vel? Det kan jeg se på, at du kigger op.','Der er tre tegn spredt gennem byens ældste gader. Find dem, før nogen andre gør.']},
  {id:'merchant',name:'Den omrejsende',kind:'npc',place:'gammeltorv',dx:-19,dz:10,color:[.71,.4,.29],text:['Ingen vil købe mit kompas. Det peger kun mod ting, der er forsvundet.','Det er ærligt talt dårligt for forretningen.']},
+ {id:'lamplighter',name:'Lygtemageren',kind:'npc',place:'sctmogens',dx:-21,dz:61,color:[.67,.53,.26],text:['Jeg har tabt min messinglygte ved Gammeltorv.']},
+ {id:'lostlantern',name:'Den bortkomne messinglygte',kind:'questitem',place:'gammeltorv',dx:-35,dz:-21,color:[.97,.78,.38]},
  {id:'keeper',name:'Kirkens kortlæser',kind:'npc',place:'domkirke',dx:-52,dz:-16,color:[.45,.43,.68],text:['Jeg har et kortkompas. Men du får det ikke uden at vise, at du kender byen.']},
  {id:'bookbinder',name:'Bogbinderen',kind:'npc',place:'sctmogens',dx:12,dz:55,color:[.63,.38,.3],text:['Der er gamle historier gemt i gadens facader.','Se efter lyset i vinduerne, når du går forbi.']},
  {id:'walker',name:'Byvandreren',kind:'npc',place:'borgvold',dx:-52,dz:-34,color:[.36,.57,.64],text:['Borgvold og søen har altid været mine yndlingssteder.','Hold øje med stierne: De fører dig rundt om bebyggelsen.']},
@@ -27,10 +29,10 @@ const rawEntities=[
  {id:'chest',name:'Den gamle kiste',kind:'chest',place:'gammeltorv',dx:18,dz:-15,color:[.71,.52,.25]}
 ];
 export class Game{
- constructor(world,save={}){this.world=world;this.quests=STORY;this.quest=clamp(Number(save.quest)||0,0,5);this.collected=new Set(save.collected||[]);this.broken=new Set(save.broken||[]);this.ended=!!save.ended;this.puzzleSolved=!!save.puzzleSolved;this.items=new Set(save.items||[]);this.trailStarted=!!save.trailStarted;this.trailFound=new Set((save.trailFound||[]).filter(id=>['clue-dom','clue-mogens','clue-borg'].includes(id)));this.trailSolved=!!save.trailSolved;this.camera={yaw:0,top:false};this.player={...snapWalkable(save.player||at('gammeltorv',-15,15),world),y:0,vy:0,vx:0,vz:0,heading:0};this.entities=rawEntities.map(e=>{let pt=snapWalkable(at(e.place,e.dx,e.dz),world);return {...e,...pt}});this.dialogue=null;this.onChange=()=>{};this.onWin=()=>{};this.notice='';this.noticeEnd=0;this.time=0;}
+ constructor(world,save={}){this.world=world;this.quests=STORY;this.quest=clamp(Number(save.quest)||0,0,5);this.collected=new Set(save.collected||[]);this.broken=new Set(save.broken||[]);this.ended=!!save.ended;this.puzzleSolved=!!save.puzzleSolved;this.items=new Set(save.items||[]);this.trailStarted=!!save.trailStarted;this.trailFound=new Set((save.trailFound||[]).filter(id=>['clue-dom','clue-mogens','clue-borg'].includes(id)));this.trailSolved=!!save.trailSolved;this.lanternQuest=!!save.lanternQuest;this.lanternFound=!!save.lanternFound;this.lanternSolved=!!save.lanternSolved;this.lanternUntil=0;this.camera={yaw:0,top:false};this.player={...snapWalkable(save.player||at('gammeltorv',-15,15),world),y:0,vy:0,vx:0,vz:0,heading:0};this.entities=rawEntities.map(e=>{let pt=snapWalkable(at(e.place,e.dx,e.dz),world);return {...e,...pt}});this.dialogue=null;this.onChange=()=>{};this.onWin=()=>{};this.notice='';this.noticeEnd=0;this.time=0;}
  get goal(){return STORY[this.quest]}
- persist(){try{localStorage.setItem('viborg96-save',JSON.stringify({quest:this.quest,collected:[...this.collected],broken:[...this.broken],ended:this.ended,puzzleSolved:this.puzzleSolved,items:[...this.items],trailStarted:this.trailStarted,trailFound:[...this.trailFound],trailSolved:this.trailSolved,player:{x:this.player.x,z:this.player.z}}))}catch(e){console.warn('Save unavailable',e)}}
- near(radius=8){let shown=this.entities.filter(e=>!(e.kind==='shard'&&this.collected.has(e.id))&&!(e.kind==='seal'&&this.broken.has(e.id))&&!(e.kind==='clue'&&this.trailFound.has(e.id))&&dist(e,this.player)<radius);shown.sort((a,b)=>dist(a,this.player)-dist(b,this.player));return shown[0]}
+ persist(){try{localStorage.setItem('viborg96-save',JSON.stringify({quest:this.quest,collected:[...this.collected],broken:[...this.broken],ended:this.ended,puzzleSolved:this.puzzleSolved,items:[...this.items],trailStarted:this.trailStarted,trailFound:[...this.trailFound],trailSolved:this.trailSolved,lanternQuest:this.lanternQuest,lanternFound:this.lanternFound,lanternSolved:this.lanternSolved,player:{x:this.player.x,z:this.player.z}}))}catch(e){console.warn('Save unavailable',e)}}
+ near(radius=8){let shown=this.entities.filter(e=>!(e.kind==='shard'&&this.collected.has(e.id))&&!(e.kind==='seal'&&this.broken.has(e.id))&&!(e.kind==='clue'&&this.trailFound.has(e.id))&&!(e.kind==='questitem'&&this.lanternFound)&&dist(e,this.player)<radius);shown.sort((a,b)=>dist(a,this.player)-dist(b,this.player));return shown[0]}
  objective(){let remaining=this.entities.filter(e=>{if(this.quest===0)return e.id==='archivist';if(this.quest===1)return e.kind==='shard'&&!this.collected.has(e.id);if(this.quest===2)return e.id==='gardener';if(this.quest===3)return e.kind==='seal'&&!this.broken.has(e.id);if(this.quest===4)return e.id==='chest';return e.kind==='npc'});return remaining.reduce((best,e)=>!best||dist(e,this.player)<dist(best,this.player)?e:best,null)}
  step(dt,keys){
   this.time+=dt;const p=this.player;let fx=-Math.sin(this.camera.yaw),fz=-Math.cos(this.camera.yaw),sx=Math.cos(this.camera.yaw),sz=-Math.sin(this.camera.yaw);
@@ -71,6 +73,7 @@ export class Game{
   }else this.dialogue={name:'Kirkens kortlæser',text:'Ikke helt. Se på bykortet med M, og kom tilbage med et nyt svar.'};
   this.onChange();return this.puzzleSolved;
  }
+ useLantern(){if(!this.items.has('lanterne')){this.say('Spørg lygtemageren på Sct. Mogens Gade.');return false}this.lanternUntil=this.time+16;this.say('LYGTE TÆNDT · Missionsspor lyser i 16 sekunder.');return true}
  useCompass(){
   if(!this.items.has('kompas')){this.say('Find kortlæseren ved Domkirken for at låse kortkompasset op.');return}
   const e=this.objective();if(!e){this.say('Alle hovedmissioner er løst. Brug kortet til at udforske frit.');return}
@@ -82,6 +85,13 @@ export class Game{
  advance(n){this.quest=Math.max(this.quest,n);this.persist();this.onChange();}
  interact(){let e=this.near();if(!e){this.say('Der er ingen at tale med eller samle op her.');return}
  if(e.kind==='npc'){
+  if(e.id==='lamplighter'){
+   if(this.lanternSolved)this.dialogue={name:e.name,text:'Lygten er din. Tryk L for at fremhæve missionernes spor.'};
+   else if(this.lanternFound){this.lanternSolved=true;this.items.add('lanterne');this.persist();this.dialogue={name:e.name,text:'Du fandt den! Nu er lygten tændt. Tryk L for at vise missionernes spor i 16 sekunder.'};}
+   else if(this.lanternQuest)this.dialogue={name:e.name,text:'Jeg tabte den på vestsiden af Gammeltorv. Kom tilbage med den.'};
+   else{this.lanternQuest=true;this.persist();this.dialogue={name:e.name,text:'Vil du finde min messinglygte ved Gammeltorv? Jeg belønner dig med en lygte, der kan vise spor.'};}
+   this.onChange();return;
+  }
   if(e.id==='routemaster'){
    if(!this.trailStarted){this.trailStarted=true;this.persist();this.dialogue={name:e.name,text:'En ny byrute! Find tre skilte i rækkefølgen Domkirken → Sct. Mogens Gade → Borgvold. Hvert skilt har et ord. Vend tilbage og saml ordene til én sætning.'};}
    else if(this.trailSolved)this.dialogue={name:e.name,text:'Du løste byruten. Dine vandrestøvler hjælper dig rundt i byen.'};
@@ -96,6 +106,11 @@ export class Game{
    this.onChange();return;
   }
   let extra;if(e.id==='archivist'&&this.quest===0){this.advance(1);extra='[QUEST FULDFØRT] Find de tre runefragmenter.'}else if(e.id==='gardener'&&this.quest===2){this.advance(3);extra='[QUEST FULDFØRT] Knus de tre segl.'}this.dialogue={name:e.name,text:e.text.join(' ')+(extra?'\n\n'+extra:'')};this.onChange();return}
+ if(e.kind==='questitem'){
+  if(!this.lanternQuest){this.say('En gammel messinglygte. Hvem ejer den?');return}
+  this.lanternFound=true;this.items.add('mistet-lygte');this.persist();
+  this.dialogue={name:e.name,text:'Du fandt lygten. Returnér den til lygtemageren på Sct. Mogens Gade.'};this.onChange();return;
+ }
  if(e.kind==='clue'){
   if(!this.trailStarted){this.say('Et skilt med en mærkelig rune. Spørg gadehistorikeren på Gammeltorv.');return}
   if(this.trailFound.has(e.id))return;
