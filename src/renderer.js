@@ -97,9 +97,9 @@ export function makeCityMesh(data){const m=new Mesh();m.box(0,-2,0,2100,2,2100,[
   const detailed=Math.hypot(centre.x,centre.z)<340;
   // Honour available OSM material information. Otherwise use a stable low-poly palette.
   const walls=b.material==='brick'?[.61,.35,.29]:b.material==='stone'?[.67,.66,.61]:b.material==='wood'?[.69,.49,.34]:c.walls;
-  // Demo cathedral uses a dedicated landmark mesh: do not overlay generic pitched roofs,
-  // fake windows and rectangular church blocks over the authored silhouette.
-  if(data.source==='demo'&&b.id.startsWith('domkirke-'))continue;
+  // Keep the nave and transept visible: the landmark mesh currently models only the west front.
+  // The tower blocks alone are replaced by the dedicated tower geometry.
+  if(data.source==='demo'&&(b.id==='domkirke-west-tower'||b.id==='domkirke-east-tower'))continue;
   m.polygonBuilding(b.points,b.height,walls,c.roof,{detail:detailed,material:b.material,roofShape:b.roofShape});
  }
  if(data.source==='demo'){addMogensPhotoStudy(m);addCathedralStudy(m);}
