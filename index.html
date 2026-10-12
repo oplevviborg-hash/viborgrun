@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101c21"><meta name="description" content="VIBORG 96 – et retro 3D-eventyr i Viborg med gåder, quests og fri udforskning.">
+<title>VIBORG 96 | Byens hemmelighed</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+<canvas id="game" aria-label="3D-spilverden"></canvas>
+<div id="shell">
+  <header id="hud"><div class="brand">VIBORG <b>96</b><small>BYENS HEMMELIGHED</small></div><div id="quest" aria-live="polite">INDLÆSER SPIL…</div><div class="right"><span id="coins">◆ 0/3</span><button id="viewButton" title="Skift kamera (V)">◉ KAMERA</button><button id="menuButton" title="Pause (Esc)">☰</button></div></header>
+  <div id="crosshair">+</div><div id="hint" aria-live="polite"></div><div id="mapbox"><canvas id="minimap" width="180" height="180"></canvas><span>KORT / M</span></div>
+  <div id="status" role="status"></div>
+  <div id="controls"><span><b>WASD</b> BEVÆG</span><span><b>MUS</b> DREJ KAMERA</span><span><b>SPACE</b> HOP</span><span><b>E</b> TAL/SAML</span><span><b>F</b> SLÅ</span><span><b>V</b> TOPVIEW</span><span><b>I</b> TASKE</span><span><b>M</b> KORT</span></div>
+  <div id="mobile" aria-label="Mobilstyring"><div class="dpad"><button data-hold="w" class="up">▲</button><button data-hold="a" class="left">◀</button><button data-hold="s" class="down">▼</button><button data-hold="d" class="right">▶</button></div><div class="actions"><button data-tap="e">TAL</button><button data-tap="space">HOP</button><button data-tap="f">SLÅ</button><button data-tap="v">KAMERA</button></div></div>
+  <div id="overlay" class="show"><section id="panel" aria-live="polite"></section></div>
+</div>
+<footer id="credit">Kortdata <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap-bidragydere · ODbL</a> <span id="mapSource">| DEMOKORT</span></footer>
+<script type="module" src="src/main.js"></script>
+</body></html>

@@ -1,0 +1,11 @@
+{
+  "name": "viborg96",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Browser-only low-poly 3D prototype of Viborg with staged OSM map import",
+  "scripts": {
+    "test": "node --test tests/smoke.mjs",
+    "validate": "python scripts/validate.py"
+  }
+}
